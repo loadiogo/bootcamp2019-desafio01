@@ -22,14 +22,28 @@ const projects = [
   }
 ];
 
+server.use((req, res, next) => {
+  console.count("Requests");
+  next();
+});
+
+function checkProjectInArray(req, res, next) {
+  const project = projects.find(p => p.id === parseInt(req.params.id));
+  if (!project) {
+    return res.status(400).json({ error: "This project id does not exist!" });
+  }
+
+  res.project = project;
+
+  return next();
+}
+
 server.get("/projects", (req, res) => {
   return res.json(projects);
 });
 
-server.get("/projects/:id", (req, res) => {
-  const project = projects.find(p => p.id === parseInt(req.params.id));
-
-  return res.json(project);
+server.get("/projects/:id", checkProjectInArray, (req, res) => {
+  return res.json(res.project);
 });
 
 server.post("/projects", (req, res) => {
@@ -41,8 +55,8 @@ server.post("/projects", (req, res) => {
   res.json(projects);
 });
 
-server.post("/projects/:id/tasks", (req, res) => {
-  const project = projects.find(p => p.id === parseInt(req.params.id));
+server.post("/projects/:id/tasks", checkProjectInArray, (req, res) => {
+  const project = res.project;
   const { title } = req.body;
 
   project.tasks.push(title);
@@ -50,20 +64,18 @@ server.post("/projects/:id/tasks", (req, res) => {
   res.json(projects);
 });
 
-server.put("/projects/:id", (req, res) => {
-  const project = projects.find(p => p.id === parseInt(req.params.id));
+server.put("/projects/:id", checkProjectInArray, (req, res) => {
+  const project = res.project;
 
   projects.splice(projects.indexOf(project), 1, req.body);
 
   return res.json(projects);
 });
 
-server.delete("/projects/:id", (req, res) => {
-  const project = projects.find(p => p.id === parseInt(req.params.id));
+server.delete("/projects/:id", checkProjectInArray, (req, res) => {
+  projects.splice(projects.indexOf(res.project), 1);
 
-  projects.splice(projects.indexOf(project), 1);
-
-  return res.send("Project deleted with success!");
+  return res.send("The project was deleted successfully!");
 });
 
 server.listen(3000);
